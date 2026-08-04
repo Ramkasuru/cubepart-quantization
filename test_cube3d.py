@@ -4,7 +4,7 @@ tokenizer from HF, and verify the quantized weights load correctly with
 torchao. This does NOT run full text-to-3D generation (that needs Roblox's
 cube3d model-definition code, which isn't on the HF page) -- it just
 confirms the download, torchao version, and quantized tensor structure
-are all correct before you build the full pipeline.
+are all correct before the full pipeline build.
 """
 import torch 
 from huggingface_hub import hf_hub_download
