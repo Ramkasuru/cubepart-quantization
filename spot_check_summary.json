@@ -1,0 +1,41 @@
+{
+  "vram_gb": {
+    "bf16_peak": 28.33,
+    "int4_peak": 21.23
+  },
+  "chamfer_distance_median_across_all_parts": 0.53895,
+  "chamfer_distance_mean_across_all_parts": 0.53997,
+  "per_mesh": {
+    "003_hat": {
+      "parts": [
+        "pointed top",
+        "wide brim"
+      ],
+      "chamfer_distance_per_part": [
+        0.17375,
+        0.65581
+      ],
+      "chamfer_distance_mean": 0.41478,
+      "bf16_latency_s": 47.79,
+      "int4_latency_s": 69.76
+    },
+    "130_yarn": {
+      "parts": [
+        "strands",
+        "sphere core"
+      ],
+      "chamfer_distance_per_part": [
+        0.42208,
+        0.90823
+      ],
+      "chamfer_distance_mean": 0.66515,
+      "bf16_latency_s": 57.15,
+      "int4_latency_s": 64.09
+    }
+  },
+  "caveats": [
+    "bf16_130 (yarn ball) is non-watertight; CubePart docs note that duplicated-shell meshes degrade quality regardless of quantization.",
+    "Parts lists are best-guess from visual inspection; not Roblox-official.",
+    "INT4 method is HQQ (not pure RTN) due to torchao bug in default RTN packing path across versions 0.10-0.13. Same W4A16 scheme."
+  ]
+}

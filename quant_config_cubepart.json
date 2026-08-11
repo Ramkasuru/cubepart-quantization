@@ -1,0 +1,20 @@
+{
+  "method": "rtn",
+  "scheme": "W4A16",
+  "group_size": 128,
+  "scope": "diffusion_model only (transformer_blocks + multi_transformer_blocks)",
+  "skipped_substrings": [
+    "img_in",
+    "norm",
+    "pos_embed",
+    "proj_out",
+    "time_text_embed",
+    "txt_in"
+  ],
+  "linear_params_total_M": 2145.6,
+  "linear_params_quantized_M": 2134.0,
+  "quant_time_s": 5.5,
+  "vram_gb_before": 18.78,
+  "vram_gb_after": 11.68,
+  "vram_gb_peak_during_quant": 19.2
+}

@@ -2,6 +2,12 @@
 RTN W4A16 INT4 quantization of CubePart's diffusion_model (QwenImageTransformer2DModel),
 matching the exact approach from TrNi/efficient-cube3d: torchao int4_weight_only,
 group_size=128, no calibration data needed.
+
+NOTE: the model is transiently upcast to fp32 ONLY for the duration of the
+quantize_() call, working around a torchao 0.10.0 bug where the internal
+scale/zero-point packing assumes fp32 scale dtype and fails on bf16 input.
+The final saved checkpoint's quantized weights are still INT4-packed exactly
+as intended -- this does not change the W4A16 scheme or inference dtype.
 """
 
 import json
@@ -65,11 +71,14 @@ def main():
     vram_before = torch.cuda.memory_allocated() / 1e9
     print(f"   VRAM before quantization: {vram_before:.2f} GB")
 
+    print(">> Temporarily upcasting diffusion_model to fp32 for quantization math")
+    diffusion_model = diffusion_model.to(torch.float32)
+
     print(f">> Applying RTN W4A16 quantization (group_size={GROUP_SIZE})")
     t0 = time.time()
     quantize_(
         diffusion_model,
-        int4_weight_only(group_size=GROUP_SIZE, zero_point_domain=ZeroPointDomain.INT),
+        int4_weight_only(group_size=GROUP_SIZE , use_hqq=True ),
         filter_fn=filter_fn,
     )
     torch.cuda.synchronize()
@@ -77,7 +86,7 @@ def main():
     print(f"   quantization took {quant_time:.1f}s")
 
     vram_after = torch.cuda.memory_allocated() / 1e9
-    peak_vram = torch.cuda.max_memory_allocated() / 1e9
+    peak_vram = torch.cuda.max_memory_allocated() / 1e9	
     print(f"   VRAM after quantization: {vram_after:.2f} GB (peak during: {peak_vram:.2f} GB)")
 
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
@@ -88,7 +97,6 @@ def main():
         "method": "rtn",
         "scheme": "W4A16",
         "group_size": GROUP_SIZE,
-        "zero_point_domain": "INT",
         "scope": "diffusion_model only (transformer_blocks + multi_transformer_blocks)",
         "skipped_substrings": sorted(SKIP_SUBSTRINGS),
         "linear_params_total_M": round(total_params / 1e6, 1),
