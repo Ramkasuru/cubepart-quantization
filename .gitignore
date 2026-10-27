@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+results/
+logs/
+*.pkl
+*.pt
+*.safetensors
+*.zip
+*.npz
+*.glb
