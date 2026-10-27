@@ -26,6 +26,9 @@ distance of a configuration against itself is exactly 0).
 | Peak VRAM during generation | 33.71 GiB | 27.09 GiB (19.6% lower) |
 | Latency per generation (mean, 10 meshes) | 34.7 s | 66.5 s (eager mode) |
 
+Full per-prompt, per-category and dataset statistics for both pairs:
+`cd_stats.json` (output of `compute_4config_cd_stats.py` for job 1159996).
+
 File sizes are decimal GB from exact byte counts; VRAM is GiB from
 `torch.cuda.max_memory_allocated()`. Measured on one L40S.
 
@@ -50,6 +53,10 @@ Parts lists
 - `parts_override.json`: the 250 per-prompt parts lists used for every number above (written by `rebuild_parts_override.py`).
 - `rebuild_parts_override.py`: holds the 250 lists; validates them and writes `parts_override.json` with `--apply`.
 - `spot_check_parts_override.py`: flags implausible part names against the `master_suite.json` prompts.
+- `audit_alignment.py`: per-category prompt to parts word overlap (healthy file: 0 to 15% zero-overlap; the shuffled one was 55 to 85%).
+- `diagnose_shuffle.py`: tells a constant offset (recoverable) from a true shuffle (rebuild needed).
+- `inspect_defects.py`: prints flagged entries with their two neighbours on each side.
+- These read `nisarg_shared/parts_override.json` and `master_suite.json`, the cluster layout.
 
 Checkpoint
 - `test_int4_checkpoint_save.py`: compares three save/reload patterns on a small module.
@@ -63,7 +70,10 @@ Meshes
 - `render_sh_spec_ao.py`: CPU-only SH / specular / AO clay renderer (parameters not tuned against a reference).
 
 Earlier scripts kept for history: `quantize_cubepart_rtn.py`, `benchmark_spot_check.py`,
-`benchmark_cubepart_bf16_vs_int4.py`, `probe_cuda.py`, `test_cube3d.py`.
+`benchmark_cubepart_bf16_vs_int4.py`, `probe_cuda.py`, `test_cube3d.py`, and
+`benchmark_full_sweep.py` (original 2-config sweep: unseeded sampling and chamfer
+distance as a sum, so its numbers are not comparable; replaced by
+`benchmark_4config_sweep.py`).
 
 ## Experimental design
 
