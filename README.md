@@ -32,6 +32,32 @@ Full per-prompt, per-category and dataset statistics for both pairs:
 File sizes are decimal GB from exact byte counts; VRAM is GiB from
 `torch.cuda.max_memory_allocated()`. Measured on one L40S.
 
+## BF16 vs INT4 renders
+
+Rendered with spherical harmonic lighting, Blinn-Phong specular and ambient
+occlusion (`SH_BPS_AO`), gray only, so the geometry itself shows.
+
+CubePart: full mesh on top, parts below. Left: BF16 Cube3D + BF16 CubePart
+(config A). Right: INT4 Cube3D + INT4 CubePart (config D), so the two columns
+start from different input meshes; the chamfer distances above compare parts
+from the same input mesh.
+
+![A pineapple with a crown of 8 spiky leaves and a hexagonal surface pattern](assets/sh_renders/191_figure.png)
+
+![steampunk boombox with 2 circular speakers and 6 brass dials](assets/sh_renders/305_figure.png)
+
+![A sitting cat with pointed ears and a long tail](assets/sh_renders/020_figure.png)
+
+Cube3D whole meshes, turntable over 8 near-level views. The lace doily is a
+failure case: INT4 loses the lace pattern.
+
+| Prompt | BF16 | **INT4** |
+|---|:-:|:-:|
+| A pineapple with a crown of 8 spiky leaves and a hexagonal surface pattern | ![BF16 191](assets/sh_renders/191_cube3d_bf16.gif) | ![INT4 191](assets/sh_renders/191_cube3d_int4.gif) |
+| steampunk boombox with 2 circular speakers and 6 brass dials | ![BF16 305](assets/sh_renders/305_cube3d_bf16.gif) | ![INT4 305](assets/sh_renders/305_cube3d_int4.gif) |
+| A sitting cat with pointed ears and a long tail | ![BF16 020](assets/sh_renders/020_cube3d_bf16.gif) | ![INT4 020](assets/sh_renders/020_cube3d_int4.gif) |
+| A lace doily pattern extruded to a thin 3D surface | ![BF16 118](assets/sh_renders/118_cube3d_bf16.gif) | ![INT4 118](assets/sh_renders/118_cube3d_int4.gif) |
+
 ## Scripts
 
 All scripts run from the CubePart repo root (`cube/cubepart`) with:
@@ -61,13 +87,20 @@ Parts lists
 Checkpoint
 - `test_int4_checkpoint_save.py`: compares three save/reload patterns on a small module.
 - `export_int4_checkpoint.py`: saves `multi_part_dit_int4_hqq_g128.pt` and verifies a bit-exact reload with a real generation.
-- `export_int4_safetensors.py`: converts the checkpoint to `.safetensors` with a bit-exact verify step. Not yet run on the cluster.
+- `export_int4_safetensors.py`: converts the checkpoint to `.safetensors` with a bit-exact verify step. Passed in job 1215174 (1,478,462,752 bytes).
+- `export_safetensors.slurm`: SLURM wrapper for the export; the verify runs in a fresh process.
+- `time_load_paths.py`, `time_load_paths.slurm`: time repeated generations per load path (bf16, pt, st). Result: st = pt (64.6 s).
 
 Meshes
 - `select_visual_prompts.py`, `select_3_demo_prompts.py`: pick prompts for the mesh package.
 - `export_visual_assets.py`: exports Cube3D whole meshes and CubePart part meshes as `.glb` with a `manifest.json`.
 - `load_parts_example.py`, `tutorial_part_mapping.py`: map part files back to part names.
-- `render_sh_spec_ao.py`: CPU-only SH / specular / AO clay renderer (parameters not tuned against a reference).
+- `render_sh_spec_ao.py`: CPU-only SH / specular / AO clay renderer (parameters not tuned against a reference). Superseded by the `SH_BPS_AO` renderer below.
+
+Renders
+- `sh_bps_ao_colab.ipynb`: `SH_BPS_AO` renderer (nvdiffrast + Embree AO), 18 Fibonacci-sphere views per mesh, run on Colab; produced every render above. Adapted from Nisarg Trivedi's notebook: rows flipped because nvdiffrast row 0 is the image bottom; no upright rotation (our meshes are +y up).
+- `sh_figures_colab.ipynb`: builds the BF16 vs INT4 figures and turntable GIFs from the renders. No GPU needed.
+- `render_sh_bps_ao.py`, `render_sh_bps_ao.slurm`: the same renderer as a SLURM job. Not yet run on a GPU.
 
 Earlier scripts kept for history: `quantize_cubepart_rtn.py`, `benchmark_spot_check.py`,
 `benchmark_cubepart_bf16_vs_int4.py`, `probe_cuda.py`, `test_cube3d.py`, and

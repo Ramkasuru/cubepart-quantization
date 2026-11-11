@@ -66,8 +66,9 @@ def write():
     tensors = {k: t.detach().cpu().contiguous() for k, t in flat.items()}
     save_file(tensors, str(ST_PATH), metadata={"format": "pt", "torchao": "0.11.0",
                                                "recipe": "quantize_ then copy leaves"})
-    size_gb = ST_PATH.stat().st_size / (1024 ** 3)
-    print(f">> Wrote {ST_PATH}: {len(tensors)} tensors, {size_gb:.3f} GB")
+    n_bytes = ST_PATH.stat().st_size
+    print(f">> Wrote {ST_PATH}: {len(tensors)} tensors, {n_bytes:,} bytes "
+          f"({n_bytes / 1e9:.3f} GB, {n_bytes / 2**30:.3f} GiB)")
     print("Now run in a FRESH process: python export_int4_safetensors.py --verify")
 
 
