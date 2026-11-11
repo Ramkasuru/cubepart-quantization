@@ -17,8 +17,8 @@ distance of a configuration against itself is exactly 0).
 
 | | min | median | mean | max |
 |---|---|---|---|---|
-| CD(A,B): BF16 Cube3D input, BF16 vs INT4 CubePart | 0.0011 | 0.0114 | 0.0193 | 0.821 |
-| CD(C,D): INT4 Cube3D input, BF16 vs INT4 CubePart | 0.0014 | 0.0118 | 0.0239 | 1.626 |
+| CD(A,B): BF16 Cube3D input, BF16 vs INT4 CubePart | 0.0011 | 0.0114 | 0.0193 | 0.8206 |
+| CD(C,D): INT4 Cube3D input, BF16 vs INT4 CubePart | 0.0014 | 0.0118 | 0.0239 | 1.6261 |
 
 | | BF16 | INT4 |
 |---|---|---|
@@ -34,13 +34,7 @@ File sizes are decimal GB from exact byte counts; VRAM is GiB from
 
 ## BF16 vs INT4 renders
 
-Rendered with spherical harmonic lighting, Blinn-Phong specular and ambient
-occlusion (`SH_BPS_AO`), gray only, so the geometry itself shows.
-
-CubePart: full mesh on top, parts below. Left: BF16 Cube3D + BF16 CubePart
-(config A). Right: INT4 Cube3D + INT4 CubePart (config D), so the two columns
-start from different input meshes; the chamfer distances above compare parts
-from the same input mesh.
+Full mesh on top, CubePart parts below. Rendered with spherical harmonic lighting, Blinn-Phong specular and ambient occlusion: gray only, no color, so the geometry itself shows.
 
 ![A pineapple with a crown of 8 spiky leaves and a hexagonal surface pattern](assets/sh_renders/191_figure.png)
 
@@ -48,8 +42,7 @@ from the same input mesh.
 
 ![A sitting cat with pointed ears and a long tail](assets/sh_renders/020_figure.png)
 
-Cube3D whole meshes, turntable over 8 near-level views. The lace doily is a
-failure case: INT4 loses the lace pattern.
+### Shaded renders: BF16 vs INT4
 
 | Prompt | BF16 | **INT4** |
 |---|:-:|:-:|
@@ -57,6 +50,8 @@ failure case: INT4 loses the lace pattern.
 | steampunk boombox with 2 circular speakers and 6 brass dials | ![BF16 305](assets/sh_renders/305_cube3d_bf16.gif) | ![INT4 305](assets/sh_renders/305_cube3d_int4.gif) |
 | A sitting cat with pointed ears and a long tail | ![BF16 020](assets/sh_renders/020_cube3d_bf16.gif) | ![INT4 020](assets/sh_renders/020_cube3d_int4.gif) |
 | A lace doily pattern extruded to a thin 3D surface | ![BF16 118](assets/sh_renders/118_cube3d_bf16.gif) | ![INT4 118](assets/sh_renders/118_cube3d_int4.gif) |
+
+Rendered with spherical harmonic lighting, Blinn-Phong specular and ambient occlusion: gray only, no color, so the geometry itself shows. The lace doily is a failure case: INT4 loses the lace pattern.
 
 ## Scripts
 
