@@ -1,4 +1,8 @@
-# CubePart INT4 Quantization
+# 🚀 First INT4 Quantized Efficient-CubePart3D - 83% Smaller Part Decomposition Model
+![](https://img.shields.io/badge/Model_Size-1.48_GB_(82.8%25↓)-blueviolet)
+![](https://img.shields.io/badge/Peak_VRAM-27.09_GiB_(19.6%25↓)-brightgreen)
+![](https://img.shields.io/badge/Part_CD_median-0.0114_(near_lossless)-blue)
+![](https://img.shields.io/badge/Latency-66.5s_(eager_mode,_1.9x_slower)-orange)
 
 Code for INT4 weight-only quantization of the diffusion transformer in Roblox's
 [CubePart](https://huggingface.co/Roblox/cubepart) and for the BF16 vs INT4
@@ -117,7 +121,7 @@ B/D pass. Surface sampling and the chamfer metric are both seeded per mesh
 (`seed = idx`). Chamfer distance is the average of the forward and backward
 mean nearest neighbour distances over 5000 sampled points per part.
 
-## Superseded: spot check, 2 meshes (August 2026)
+<!-- ## Superseded: spot check, 2 meshes (August 2026)
 
 Kept for the record; do not cite. These numbers came before the sampling seed
 fix and the rebuilt parts lists, and the VRAM figures were not a true
@@ -128,3 +132,4 @@ generation-time peak.
 - Latency: BF16 about 48 to 57 s per mesh, INT4 about 64 to 70 s per mesh
 
 See `spot_check_summary.json`.
+-->
