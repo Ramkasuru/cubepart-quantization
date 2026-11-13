@@ -1,13 +1,8 @@
 """
-RTN W4A16 INT4 quantization of CubePart's diffusion_model (QwenImageTransformer2DModel),
-matching the exact approach from TrNi/efficient-cube3d: torchao int4_weight_only,
-group_size=128, no calibration data needed.
-
-NOTE: the model is transiently upcast to fp32 ONLY for the duration of the
-quantize_() call, working around a torchao 0.10.0 bug where the internal
-scale/zero-point packing assumes fp32 scale dtype and fails on bf16 input.
-The final saved checkpoint's quantized weights are still INT4-packed exactly
-as intended -- this does not change the W4A16 scheme or inference dtype.
+RTN W4A16 INT4 quantization of CubePart's diffusion_model, same as TrNi/efficient-cube3d
+(torchao int4_weight_only, group_size=128, no calibration).
+The model is upcast to fp32 only during quantize_(), torchao 0.10.0 fails on bf16 scales.
+The saved weights are still INT4.
 """
 
 import json

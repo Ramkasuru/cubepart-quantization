@@ -1,12 +1,9 @@
 """
-Fills in the remaining efficiency numbers Nisarg asked for: averaged
-per-inference latency (not one bar-stool point), load/setup time, and peak
-VRAM including the Qwen text encoder, both precisions, in one pass.
+Latency (mean over 10 meshes), setup time and peak VRAM for BF16 and INT4 in one run.
 
     python measure_efficiency.py
 
-Takes roughly 15-25 minutes (model load + quantize + 10 generations x 2
-precisions on L40S). Run on a GPU node.
+Takes about 15-25 min on one L40S.
 """
 import json
 import time
@@ -21,7 +18,7 @@ from benchmark_4config_sweep import (
 )
 from cube_part.pipelines import PartShapeDenoiserPipeline
 
-# spread across categories for a representative average, not cherry-picked
+# one mesh from each of 10 categories
 LATENCY_TEST_IDX = ["130", "060", "020", "160", "240", "220", "080", "180", "260", "290"]
 
 
@@ -84,14 +81,9 @@ def main():
     print(f"Quantize time (on top of a loaded BF16 model): {quant_s:.1f}s")
     print(f"INT4 mean per-inference latency (n={len(int4_lat)}): {int4_mean:.1f}s")
     print(f"INT4 peak VRAM during generation: {int4_peak_gb:.2f} GB")
-    print(f"\nNOTE on 'INT4 setup time': this pipeline always loads BF16 weights first, then quantizes")
-    print(f"in place (there is no from-scratch load-straight-from-the-1.48 GB-checkpoint path yet,")
-    print(f"unlike Cube3D's EngineFast). Honest INT4 setup time today is bf16_load + quantize =")
-    print(f"{bf16_load_s + quant_s:.1f}s. A meta-device init + direct checkpoint load would likely get this")
-    print(f"much closer to Cube3D's 6.9s, but that is a real code change, not measured here.")
-    print(f"\nNOTE on 'smallest GPU': {int4_peak_gb:.2f} GB is what was MEASURED on this workload on L40S.")
-    print(f"This is an inference about minimum GPU size, not an empirical test on smaller hardware --")
-    print(f"only L40S 44GB was available to test on.")
+    print(f"\nINT4 setup time = BF16 load + quantize = {bf16_load_s + quant_s:.1f}s "
+          f"(there is no direct INT4 load path yet).")
+    print(f"INT4 peak VRAM {int4_peak_gb:.2f} GB was measured on L40S only, smaller GPUs were not tested.")
 
 
 if __name__ == "__main__":

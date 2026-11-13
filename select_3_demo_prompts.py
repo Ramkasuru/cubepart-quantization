@@ -1,9 +1,6 @@
 """
-Small selector for Nisarg's 2026-09-21 ask: "share meshes belonging to 3
-prompts x 4 models". Picks 3 well-characterized, non-outlier prompts
-spanning different categories (furniture, architecture, animal_domestic) so
-the example shows real variety. Parts are read live from the actual
-parts_override.json on disk, not retyped, so there is no transcription risk.
+Picks 3 prompts (furniture, architecture, animal_domestic) for the 3 prompts x 4 models example.
+Parts are read from parts_override.json.
 
     python select_3_demo_prompts.py --out visual_prompts_3.json
 """
@@ -11,9 +8,7 @@ import argparse
 import json
 from pathlib import Path
 
-# bar stool (furniture, extensively verified elsewhere in this project),
-# medieval castle (architecture, the cleanest category, zero outlier tail),
-# sitting cat (animal_domestic, simple, not flagged as an outlier)
+# bar stool, medieval castle, sitting cat
 PICKS = ["130", "060", "020"]
 
 

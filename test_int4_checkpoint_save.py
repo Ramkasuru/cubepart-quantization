@@ -1,23 +1,9 @@
 """
-Answers "what will it take to ship CubePart INT4 weights" (Nisarg's ask,
-2026-09-19 10:30 PM). The project already hit this once and worked around it
-rather than solving it: Errors_and_Fixes.md "AffineQuantizedTensor can't
-survive cpu<->cuda .to()" -- reloading a saved INT4 checkpoint
-(multi_part_dit_rtn_int4_g128.pt) and moving device broke the quantized
-tensors, so benchmark_4config_sweep.py has never saved/reloaded across
-process boundaries -- it only ever quantizes in-place and keeps using the
-live model in the same process.
+Tries 3 save/reload patterns for torchao INT4 weights on a small Linear layer and checks
+that a reload in a new process gives the same output.
 
-Nisarg's own Cube3D INT4 checkpoint (shape_gpt_rtn_int4_g128.pt) IS
-downloadable and loadable fresh from HF, so SOME save/load pattern works for
-an AffineQuantizedTensor model -- we just haven't found the right one for
-CubePart. This script tries 3 candidate patterns against a tiny slice of the
-real model (not the full 8.58 GB DiT, to keep iteration fast) and checks
-whether a FRESH PROCESS reload reproduces the live quantized output exactly.
-
-Run from ~/cube/cubepart, same env as the sweep:
-    python test_int4_checkpoint_save.py --write   # do the quantize + 3 save attempts
-    python test_int4_checkpoint_save.py --read     # NEW PROCESS: try loading each, compare
+    python test_int4_checkpoint_save.py --write   # quantize and save with the 3 patterns
+    python test_int4_checkpoint_save.py --read    # new process: load each and compare
 """
 import argparse
 from pathlib import Path
@@ -30,9 +16,7 @@ GROUP_SIZE = 128
 
 
 def toy_linear():
-    # stand-in for one transformer_blocks Linear layer -- same dtype/shape
-    # class as the real model, small enough to save/load in seconds while we
-    # figure out which serialization pattern survives
+    # stand-in for one transformer_blocks Linear, same dtype
     torch.manual_seed(0)
     m = torch.nn.Sequential(
         torch.nn.Linear(2048, 2048, bias=False),
@@ -56,17 +40,10 @@ def write():
     # Pattern A: save state_dict while model is still on cuda (no .to() before save)
     torch.save(m.state_dict(), OUT_DIR / "pattern_a_state_dict.pt")
 
-    # Pattern B: save the whole module object (pickle), not just state_dict --
-    # preserves the AffineQuantizedTensor subclass instances directly rather
-    # than round-tripping through load_state_dict's tensor-copy path
+    # Pattern B: pickle the whole module
     torch.save(m, OUT_DIR / "pattern_b_full_module.pt")
 
-    # Pattern C: save state_dict, but also save the architecture separately so
-    # on load we can quantize_() an identical fresh module FIRST (so its
-    # Linear layers are already AffineQuantizedTensor-shaped) and only then
-    # load_state_dict(..., assign=True) -- assign=True replaces parameters
-    # instead of copying into existing storage, which plain tensor subclasses
-    # often need.
+    # Pattern C: quantize a fresh module first, then load_state_dict(assign=True)
     torch.save(m.state_dict(), OUT_DIR / "pattern_c_state_dict.pt")
 
     print("Wrote probe_input.pt, reference_output.pt, and 3 candidate checkpoints to", OUT_DIR)

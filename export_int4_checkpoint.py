@@ -1,13 +1,9 @@
 """
-Full-scale version of test_int4_checkpoint_save.py's confirmed recipe (Pattern
-A: quantize a fresh module first, then plain load_state_dict()) applied to
-the REAL diffusion_model, not the toy stand-in. Produces the actual shippable
-checkpoint file + its disk size (fills in the "[ pending ]" cell in
-HF_Page_Draft_CubePart_INT4.md), and proves round-trip correctness by
-comparing a real generate_parts() output, not just tensor values.
+Saves the quantized diffusion_model state dict and checks the reload with a real generation.
+Quantize first, then plain load_state_dict() (pattern A in test_int4_checkpoint_save.py).
 
-    python export_int4_checkpoint.py --write     # quantize, save checkpoint, save reference output
-    python export_int4_checkpoint.py --verify    # NEW PROCESS: fresh-load checkpoint, compare
+    python export_int4_checkpoint.py --write     # quantize, save checkpoint and reference output
+    python export_int4_checkpoint.py --verify    # new process: load checkpoint and compare
 """
 import argparse
 import json
@@ -27,7 +23,7 @@ OUT_DIR = Path("results/checkpoint_export")
 CKPT_PATH = OUT_DIR / "multi_part_dit_int4_hqq_g128.pt"
 REF_PATH = OUT_DIR / "reference_parts.npz"
 
-TEST_IDX = "130"  # bar stool -- well-characterized, small part count, fast
+TEST_IDX = "130"  # bar stool, 3 parts
 
 
 def load_test_parts():
@@ -51,7 +47,7 @@ def write():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     pipe = build_and_quantize_pipe()
 
-    # save the checkpoint -- state_dict off a CUDA-resident model, no .to() first
+    # save from the CUDA model, no .to() before
     torch.save(pipe.system.diffusion_model.state_dict(), CKPT_PATH)
     size_gb = CKPT_PATH.stat().st_size / (1024 ** 3)
     print(f">> Saved {CKPT_PATH} ({size_gb:.3f} GB) <-- this is the HF page's real 'model size on disk' number")
@@ -78,8 +74,7 @@ def verify():
         vae_checkpoint_path=VAE_CHECKPOINT_PATH,
         extract_geometry_fn_name="extract_geometry_coarse_to_fine",
     )
-    # Pattern A: quantize FIRST (establishes AffineQuantizedTensor structure),
-    # then plain load_state_dict (no assign=True) to overwrite with the saved values
+    # quantize first, then load_state_dict without assign=True
     quantize_(pipe.system.diffusion_model, int4_weight_only(group_size=GROUP_SIZE, use_hqq=True),
                filter_fn=build_filter_fn(SKIP_SUBSTRINGS))
     sd = torch.load(CKPT_PATH, weights_only=False, map_location="cuda")

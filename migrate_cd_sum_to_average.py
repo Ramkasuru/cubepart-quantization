@@ -1,17 +1,7 @@
 """
-One-time migration: halve chamfer_distance_per_part / chamfer_distance_mean
-in any already-written per-mesh JSON files.
-
-benchmark_4config_sweep.py's chamfer_distance() originally computed
-d_ab.mean() + d_ba.mean() (a sum), matching benchmark_full_sweep.py. Nisarg's
-explicit spec is a true average of forward and backward computation, i.e.
-sum / 2. Since average = sum / 2 exactly, this is a lossless, deterministic
-correction -- no need to rerun any GPU generation. Run this once, after
-pulling the chamfer_distance() fix, against any results/full_sweep_4config/
-per_mesh/*.json files written before the fix landed.
-
-Safe to run multiple times: it stamps each migrated file with
-"cd_convention": "average" and skips files that already have that stamp.
+One-time fix: halves the chamfer distances in per-mesh JSON files written when
+chamfer_distance() returned the sum of the two directions instead of the average.
+Files are stamped "cd_convention": "average" and skipped on a rerun.
 """
 
 import json

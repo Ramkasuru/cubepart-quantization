@@ -1,38 +1,15 @@
 """
-Spot-check parts_override.json for the per-prompt sanity pass Nisarg asked
-for: "there could be other prompts in other categories where parts list may
-not make sense, please take your own call after one read of each prompt."
+Flags parts_override.json entries for manual review. Nothing is fixed automatically.
 
-This surfaces CANDIDATES for manual review -- it doesn't auto-fix or
-auto-exclude anything, since "does this part list make sense" is ultimately
-a judgment call, same as the category-level exclusions were.
+Checks:
+  1. a part name that marks a specific animal (shell, mane, horns, tusks) when the prompt
+     does not mention that animal (high severity)
+  2. unusual part count, duplicate names, left/right names, generic names (main body, part)
+  3. no word overlap with the prompt (weak, skipped for parts caught by 1)
+  4. same parts list on 4 or more prompts
 
-Flags, in priority order:
-  1. ANATOMICALLY IMPLAUSIBLE (high severity): a part name is a strong
-     anatomical marker for a specific animal type (e.g. "shell", "mane",
-     "horns", "tusks") but the prompt doesn't mention that type or a
-     relative. Found by an actual run of this check on animal_domestic:
-     idx 025 (pig) had a "shell" part, idx 027 (duck) had a "mane" part,
-     idx 028 (tortoise, whose OWN prompt says "shell") had a "horns" part
-     instead -- a pattern consistent with a row-shift/misalignment bug in
-     how the file was assembled, not just sloppy wording.
-  2. unusual part count, duplicate names within an entry, left/right
-     spatial identifiers (Section 7's named VLM failure mode -- soft for
-     front/back), generic/low-info names (main body, part, piece, etc.)
-  3. no word overlap with the prompt at all (soft signal only -- plenty of
-     valid parts, e.g. "seat" for "a chair", won't literally appear in the
-     prompt; SKIPPED for any part already caught by check 1, to avoid
-     double-flagging the same part two different ways)
-  4. the exact same parts list reused across 4+ different indices
-
-Run from l002 (login node) if master_suite.json isn't already cached
-locally -- it needs to fetch it from HuggingFace, and GPU compute nodes
-typically don't have outbound internet access.
-
-Output is written to a file (default spot_check_output.txt) since the full
-250-entry report is too long to reliably paste from a terminal. The
-high-severity anatomical flags are also printed directly to stdout so
-they're visible without opening the file.
+Fetches master_suite.json from Hugging Face if it is not cached, so run it where there is internet.
+The full report goes to spot_check_output.txt, high severity flags are also printed.
 """
 
 import argparse
@@ -54,8 +31,7 @@ SOFT_SPATIAL_WORDS = {"front", "back"}
 GENERIC_NAMES = {"main body", "part", "piece", "object", "thing", "top", "bottom", "body"}
 STOPWORDS = {"a", "an", "the", "with", "of", "and", "for", "on", "in", "to"}
 
-# anatomical marker -> animal-type words that would plausibly appear in the
-# prompt if this part genuinely belongs to the described animal
+# animal part -> words expected in the prompt
 ANATOMY_MARKERS = {
     "shell": {"turtle", "tortoise", "snail", "crab", "shellfish", "armadillo", "clam", "beetle"},
     "mane": {"horse", "lion", "zebra", "pony"},

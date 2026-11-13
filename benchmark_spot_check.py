@@ -1,29 +1,8 @@
 """
-Spot-check benchmark: BF16 vs INT4-quantized CubePart on Nisarg's 2 baseline meshes.
-
-Routes:
-  bf16_003.obj  (witch/wizard hat, watertight)      -> BF16 CubePart -> compare vs INT4 output
-  bf16_130.obj  (yarn ball, non-watertight)         -> same
-  rtn_int4_w4a16_003.npz (Cube3D INT4 for hat)      -> INT4 CubePart -> compare vs BF16 output
-  rtn_int4_w4a16_130.npz (Cube3D INT4 for yarn)     -> same
-
-Design choice: rather than trying to load the pre-saved multi_part_dit_rtn_int4_g128.pt
-back into a fresh pipeline (untested path, likely to fail), this quantizes the
-BF16 pipeline in-place after the BF16 pass. Same weights, same result, no risk
-of state_dict-vs-quantized-layer mismatch on reload.
-
-Per-mesh routing per Nisarg's instruction:
-    bf16 Cube3D mesh -> bf16 CubePart
-    int4 Cube3D mesh -> int4 CubePart
-
-Then compute Chamfer distance PER PART between BF16 and INT4 CubePart outputs.
-
-Caveats to be honest about in results:
-- bf16_130 is non-watertight (yarn strands with gaps between them). CubePart's own
-  docs flag this as degrading output quality regardless of quantization.
-- Parts lists are best-guess based on visual inspection of the meshes; without
-  Roblox-official ground-truth for these specific meshes, part correspondence is
-  approximate.
+Spot check: BF16 vs INT4 CubePart on 2 baseline meshes (bf16_003 hat, bf16_130 yarn ball).
+bf16 Cube3D mesh -> BF16 CubePart, int4 Cube3D mesh -> INT4 CubePart, chamfer distance per part.
+The BF16 pipeline is quantized in place after the BF16 pass instead of loading the saved .pt.
+bf16_130 is not watertight, which hurts CubePart output by itself. Parts lists are picked by eye.
 """
 
 import json
@@ -46,10 +25,7 @@ GROUP_SIZE = 128
 
 SKIP_SUBSTRINGS = {"img_in", "txt_in", "proj_out", "pos_embed", "time_text_embed", "norm"}
 
-# Mesh -> (bf16 baseline path, int4 baseline path, parts list)
-# Parts lists based on visual inspection: hat has clear pointed top + wide brim,
-# yarn ball is genuinely ambiguous but "strands" over a "sphere core" is a
-# reasonable first cut.
+# mesh -> (bf16 path, int4 path, parts list)
 BENCHMARK_SET = {
     "003_hat": {
         "bf16_mesh": "nisarg_shared/baseline_meshes/bf16_003.obj",

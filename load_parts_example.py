@@ -16,8 +16,8 @@ manifest.json is keyed by prompt idx. Each entry has:
 
 part_index is the position of the part in parts_list. A part the model returned
 empty is skipped, so a part list can be shorter than parts_list.
-File paths in the manifest were written on the cluster, so only the file name is
-used here and it is looked up under the unzipped folder.
+File paths in the manifest are absolute, so only the file name is used and it is
+looked up under the unzipped folder.
 
 Usage:
   pip install trimesh numpy

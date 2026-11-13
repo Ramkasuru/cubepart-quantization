@@ -1,15 +1,12 @@
 """
-Times repeated idx 130 generations for one load path, to explain why the
-safetensors verify generation took 188.8 s (job 1215174) versus the usual
-~66 s for INT4. Run each source in its own process:
+Times repeated idx 130 generations for one load path (the safetensors verify took 188.8 s
+in job 1215174 against the usual ~66 s for INT4). One process per source:
 
-    python time_load_paths.py --source bf16 --repeat 3   # node baseline, no quantization
+    python time_load_paths.py --source bf16 --repeat 3   # no quantization
     python time_load_paths.py --source pt   --repeat 3   # quantize_ + load_state_dict(.pt)
-    python time_load_paths.py --source st   --repeat 3   # quantize_ + copy leaves from .safetensors
+    python time_load_paths.py --source st   --repeat 3   # quantize_ + copy from .safetensors
 
-If only generation 1 is slow on every path, it is warm-up. If the st path stays
-slow on generations 2 and 3 while pt does not, the leaf copy changed the kernels.
-INT4 outputs are also checked against reference_parts.npz each time.
+INT4 outputs are checked against reference_parts.npz each time.
 """
 import argparse
 

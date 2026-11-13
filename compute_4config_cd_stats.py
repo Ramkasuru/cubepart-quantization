@@ -1,13 +1,6 @@
 """
-Aggregate CD(A,B) and CD(C,D) from benchmark_4config_sweep.py's per-mesh
-JSON output into min/max/mean/median at three levels: per_prompt,
-per_category, dataset.
-
-Reads results/full_sweep_4config/per_mesh/<idx>_ab.json and <idx>_cd.json.
-Category is derived from a hardcoded index-range table rather than a
-master_suite.json lookup, matching the fact that neither
-benchmark_full_sweep.py nor quantize_cubepart_rtn.py load that file at
-runtime -- categories were fixed once when parts_override.json was built.
+Aggregates CD(A,B) and CD(C,D) from results/full_sweep_4config/per_mesh/ into min/max/mean/median
+per prompt, per category and for the whole dataset. Categories come from fixed index ranges.
 """
 
 import argparse
@@ -18,9 +11,8 @@ from pathlib import Path
 PER_MESH_DIR = Path("results/full_sweep_4config/per_mesh")
 OUT_PATH = Path("results/full_sweep_4config/cd_stats.json")
 
-# (start_idx, end_idx_inclusive, category_name); abstract_mathematical,
-# geometric_primitive, symmetry_topology are intentionally absent -- they're
-# excluded from every parts_override.json entry and won't have per-mesh files.
+# (start_idx, end_idx, category). abstract_mathematical, geometric_primitive and
+# symmetry_topology are excluded.
 CATEGORY_RANGES = [
     (20, 39, "animal_domestic"),
     (40, 59, "animal_wild"),

@@ -1,20 +1,11 @@
 """
-Matte-clay mesh renderer: SH / SH+Spec / SH+AO / SH+Spec+AO, 4-panel, no
-color/texture -- matching the reference figure Nisarg shared (2026-09-18).
-
-No GPU or display required: shading is computed in numpy, ambient occlusion
-via Open3D's CPU raycasting scene (no OpenGL/EGL/OSMesa needed), and the
-image is rasterized with matplotlib's Agg backend. Runs the same way on the
-Jarvis login node or a local Windows machine.
-
-We do NOT have Nisarg's actual shading script (only reference images), so
-the SH coefficients / specular / AO parameters here are a first-pass
-approximation -- render one real asset, hold it next to his reference image,
-and tune SH_COEFFS / SPEC_* / AO_* below to match.
+CPU clay renderer: SH / SH+Spec / SH+AO / SH+Spec+AO, 4 panels, no color.
+Shading in numpy, AO with Open3D CPU raycasting, drawn with matplotlib Agg, so no GPU or display is needed.
+Parameters are a first pass and not matched to a reference.
 
 Usage:
     python render_sh_spec_ao.py --mesh path/to/mesh.glb --title "prompt text" --out fig.png
-    python render_sh_spec_ao.py --demo --out demo_fig.png     # synthetic test mesh, no real asset needed
+    python render_sh_spec_ao.py --demo --out demo_fig.png     # synthetic test mesh
 """
 import argparse
 
@@ -25,11 +16,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import trimesh
 
-# ---- tunable shading parameters (first pass -- tune against Nisarg's reference) ----
-# Order-2 SH coefficients (9 floats, L0..L2), hand-picked for a soft overhead
-# key + ambient fill, achromatic (same value used for R=G=B). L0 term kept
-# high relative to the directional terms so nothing goes fully black --
-# clay renders always keep some ambient floor on the unlit side.
+# shading parameters (first pass)
+# order-2 SH coefficients (L0..L2), same for R=G=B. L0 is kept high so the unlit side is not black.
 SH_COEFFS = np.array([0.85, 0.45, 0.60, 0.15, 0.04, 0.04, 0.08, 0.04, 0.02])
 AMBIENT_FLOOR = 0.22  # irradiance never drops below this fraction of peak
 KEY_LIGHT_DIR = np.array([0.35, 0.55, 0.75])
@@ -41,7 +29,7 @@ AO_MAX_DIST = None  # None = mesh diagonal * 0.5, set below per-mesh
 AO_POWER = 1.6  # >1 = more contrast/darker in occluded crevices
 AO_STRENGTH = 0.85  # 0 = AO has no effect, 1 = full AO darkening
 CLAY_ALBEDO = 0.85  # base matte grey (0..1), off-white like the reference
-EDGE_TINT = (0.6, 0.6, 0.6, 0.12)  # very faint edge lines -- keep the surface reading as smooth clay, not wireframe
+EDGE_TINT = (0.6, 0.6, 0.6, 0.12)  # faint edge lines
 
 
 def sh9_basis(n):
@@ -156,8 +144,7 @@ def make_figure(mesh: trimesh.Trimesh, title: str, out_path: str):
     ]
     fig = plt.figure(figsize=(9, 9), facecolor="white")
     fig.suptitle(title, fontsize=11, y=0.98)
-    # explicit grid rects -- matplotlib's tight_layout/auto-margins are
-    # unreliable for 3D axes and can shrink/misplace the plotted mesh
+    # fixed axes rects, tight_layout misplaces 3D axes
     rects = [
         (0.02, 0.50, 0.46, 0.42), (0.52, 0.50, 0.46, 0.42),
         (0.02, 0.04, 0.46, 0.42), (0.52, 0.04, 0.46, 0.42),
@@ -172,8 +159,7 @@ def make_figure(mesh: trimesh.Trimesh, title: str, out_path: str):
 
 
 def demo_mesh():
-    # two overlapping spheres give a visible occluded crevice, unlike a
-    # coarse flat-faced box, so AO differences are actually visible
+    # two overlapping spheres give a crease for AO
     body = trimesh.creation.icosphere(subdivisions=4, radius=1.0)
     limb = trimesh.creation.icosphere(subdivisions=4, radius=0.45)
     limb.apply_translation([0.95, 0.15, 0.1])

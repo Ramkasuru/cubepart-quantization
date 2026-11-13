@@ -11,21 +11,9 @@
 #   sbatch full_sweep_4config.slurm --idx-min 120 --idx-max 139   # furniture first
 #   sbatch full_sweep_4config.slurm                                # full sweep, all 12 usable categories
 #
-# --time=23:00:00: gpu-l40s's MaxTime is 1-00:00:00 (24h) -- confirmed via
-# `scontrol show partition gpu-l40s` on 2026-08-31 -- so this is the largest
-# allocation the partition will grant, with a 1h safety margin. The furniture
-# run (20 meshes) finishes in ~1-2h based on measured per-mesh timings, well
-# inside this. The full 250-mesh sweep (report estimate: 25-40h) CANNOT fit
-# in one job on this partition regardless of --time -- it relies on this
-# script's per-(mesh,pair) resumability: if a full-sweep job hits the 23h
-# wall before finishing, just `sbatch full_sweep_4config.slurm` again with
-# the same (or no) idx filter and it picks up exactly where it left off via
-# the <idx>_ab.json/<idx>_cd.json completion markers. Expect to resubmit
-# 1-2 times for the full sweep.
-#
-# Resumable: rerunning (same or no idx filter) after a timeout or
-# preemption skips any (mesh, pair) whose <idx>_ab.json / <idx>_cd.json
-# already exists under results/full_sweep_4config/per_mesh/.
+# --time=23:00:00 is under the 24h partition limit. The full 250-mesh sweep does not fit in
+# one job, so resubmit after a timeout: finished (mesh, pair) results in
+# results/full_sweep_4config/per_mesh/ are skipped.
 
 set -e
 mkdir -p logs

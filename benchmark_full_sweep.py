@@ -1,9 +1,6 @@
 """
-Full-sweep BF16 vs INT4 CubePart benchmark on all Cube3D baseline meshes.
-
-Auto-discovers all bf16_*.npz files in nisarg_shared/baseline_meshes/ and pairs
-each with the corresponding rtn_int4_w4a16_*.npz. Writes results incrementally
-per-mesh so a crash mid-run doesn't lose progress; can be re-run to resume.
+BF16 vs INT4 CubePart on all Cube3D baseline meshes (bf16_*.npz paired with rtn_int4_w4a16_*.npz).
+Results are written per mesh, rerun to resume.
 """
 
 import argparse

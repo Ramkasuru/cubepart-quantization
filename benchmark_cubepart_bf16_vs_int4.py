@@ -1,14 +1,8 @@
 """
-Benchmarks BF16 vs RTN-INT4-quantized CubePart on the bundled example meshes.
-Runs generation with BOTH variants in the SAME process (quantizing the model
-in-place after the BF16 pass) to avoid the cross-device state_dict reload
-issues hit earlier with torchao's AffineQuantizedTensor / TensorCoreTiled
-layout not supporting cpu->cuda .to() conversion.
-
-For each mesh: generate part meshes with BF16, then with INT4, compute
-Chamfer distance per matched part, report per-mesh and aggregate stats.
-
-Part lists sourced directly from examples/inputs/examples.json (Roblox's own mapping).
+BF16 vs RTN INT4 CubePart on the bundled example meshes.
+Both runs are in one process and the model is quantized in place after the BF16 pass,
+since the torchao quantized tensors do not support cpu->cuda .to().
+Chamfer distance per matched part. Part lists from examples/inputs/examples.json.
 """
 
 import json
@@ -28,7 +22,7 @@ CHECKPOINT_PATH = "weights/multi_part_dit.safetensors"
 VAE_CHECKPOINT_PATH = "weights/vae.safetensors"
 GROUP_SIZE = 128
 
-# Official part lists from examples/inputs/examples.json (Roblox's own mapping)
+# part lists from examples/inputs/examples.json
 MESH_PARTS = {
     "jellyfish_car": ["body", "front right wheel", "front left wheel", "rear right wheel",
                        "rear left wheel", "exhaust pipe", "headlights", "gun"],

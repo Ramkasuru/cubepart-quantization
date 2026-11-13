@@ -1,19 +1,8 @@
 """
-Export whole meshes + part meshes as .glb for the paper-figure asset package
-(Nisarg's ask, 2026-09-18 10:15/10:16 PM): Cube3D BF16/INT4 whole meshes +
-CubePart BF16/INT4 part meshes, for the 36 prompts picked by
-select_visual_prompts.py.
+Exports Cube3D whole meshes and CubePart part meshes as .glb for the 36 prompts from
+select_visual_prompts.py. CubePart configs A and D by default, --all-configs adds B and C.
+Uses the helpers in benchmark_4config_sweep.py, same environment:
 
-CubePart config A (bf16 input, bf16 model) and config D (int4 input, int4
-model) are exported -- the two "clean gold" vs "fully efficient" endpoints.
-Add configs B/C too (--all-configs) if Nisarg wants the full 4-way comparison.
-
-Reuses the tested helpers from benchmark_4config_sweep.py (pipeline loading,
-seeding, quantization) rather than reimplementing them -- run this from the
-same directory (~/cube/cubepart) with the same env:
-
-  module load cuda12.8/toolkit/12.8.1
-  source ~/envs/cube3d/bin/activate
   export PYTHONPATH=. PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True TORCHDYNAMO_DISABLE=1
   python export_visual_assets.py --selected visual_prompts_36.json --all-configs
 """
@@ -87,7 +76,7 @@ def main():
         entry["cube3d_int4"] = str(int4_out)
     print(">> Cube3D whole meshes exported")
 
-    # 2. CubePart parts -- config A (bf16/bf16)
+    # 2. CubePart parts, config A (bf16/bf16)
     print("\n>> Loading BF16 pipeline")
     pipe = PartShapeDenoiserPipeline(
         config_path=CONFIG_PATH, checkpoint_path=CHECKPOINT_PATH,

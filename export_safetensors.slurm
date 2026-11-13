@@ -7,8 +7,8 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=logs/safetensors_%j.log
 
-# Converts the verified INT4 .pt checkpoint to .safetensors, then reloads it in a
-# FRESH python process and checks a real generation bit for bit (idx 130).
+# converts the INT4 .pt checkpoint to .safetensors, then reloads it in a new process
+# and compares a real generation bit for bit (idx 130)
 #   sbatch export_safetensors.slurm
 
 set -e

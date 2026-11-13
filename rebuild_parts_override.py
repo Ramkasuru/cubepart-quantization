@@ -1,19 +1,9 @@
 """
-Rebuild nisarg_shared/parts_override.json from scratch.
+Rebuilds nisarg_shared/parts_override.json. The original lists were shuffled relative to the
+prompts (see diagnose_shuffle.py), so the 250 lists below were rewritten from the master_suite.json prompts.
 
-The original file's parts lists were shuffled relative to prompts (confirmed
-2026-08-31: diagnose_shuffle.py -> flat offset histogram, only 17/250 lists
-strongly matching any prompt, self_ok low in every category). No canonical
-schema exists to recover from: master_suite.json holds only prompts/categories
-and the HF repo TrNi/efficient-cube3d has no parts file. These 250 lists were
-re-authored by reading each master_suite.json prompt, matched to the
-granularity/style of the entries that were independently verified correct
-(120/130/139/220/240/248/259/270/280/295/309).
-
-  python rebuild_parts_override.py            # dry run: validate + per-category overlap, no write
-  python rebuild_parts_override.py --apply    # back up original -> .shuffled.bak, then write
-
-Run from ~/cube/cubepart with master_suite.json present (spot_check fetches it).
+  python rebuild_parts_override.py            # dry run: validate and print overlap per category
+  python rebuild_parts_override.py --apply    # back up the old file to .shuffled.bak and write
 """
 import argparse, json, re, sys
 from collections import defaultdict

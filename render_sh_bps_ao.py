@@ -1,12 +1,8 @@
 """
-Batch version of Nisarg's sh_bps_ao_portable.ipynb for the 36-prompt meshes.
-Writes 18 SH_BPS_AO views per mesh. Run through render_sh_bps_ao.slurm.
-
-Changes from the notebook: install cells, EXR write and plotly previews removed
-(GPU nodes have no internet and no display, and opencv could move numpy in the
-cube3d env); APPLY_UPRIGHT_ROT is False and rows are flipped instead, which keeps
-the view unmirrored; ONLY_PREFIX env var; fails on 0 meshes.
-Shading, camera and AO code are unchanged.
+SH_BPS_AO renders, 18 views per mesh, script version of sh_bps_ao_portable.ipynb.
+Run through render_sh_bps_ao.slurm.
+Differences from the notebook: no install cells, EXR or plotly previews, rows flipped
+instead of the upright rotation, ONLY_PREFIX env var.
 """
 import os
 import sys
@@ -649,7 +645,7 @@ def render_views_ablated(vertices, faces, ao_v, n_views, image_size):
         out[name] = (img.clamp(0, 1).cpu().numpy() * 255).astype(np.uint8)
     return geom, out
 
-ONLY_PREFIX = os.environ.get("ONLY_PREFIX", "")  # e.g. 020 renders one prompt as a test
+ONLY_PREFIX = os.environ.get("ONLY_PREFIX", "")  # e.g. 020 for one prompt
 
 
 def list_mesh_files(mesh_dir, exts=MESH_EXTS):

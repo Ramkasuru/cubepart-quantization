@@ -1,10 +1,6 @@
 """
-Quick smoke test: download Nisarg's INT4 RTN checkpoint + the base BF16
-tokenizer from HF, and verify the quantized weights load correctly with
-torchao. This does NOT run full text-to-3D generation (that needs Roblox's
-cube3d model-definition code, which isn't on the HF page) -- it just
-confirms the download, torchao version, and quantized tensor structure
-are all correct before the full pipeline build.
+Smoke test: downloads the Cube3D INT4 RTN checkpoint and the BF16 tokenizer from HF
+and checks the quantized weights load with torchao. Does not run generation.
 """
 import torch 
 from huggingface_hub import hf_hub_download
@@ -31,7 +27,7 @@ with torch.serialization.safe_globals([torchao.dtypes.affine_quantized_tensor.Af
     state_dict = torch.load(quant_ckpt, map_location="cpu")
 print(f"   {len(state_dict)} tensors/keys found")
 
-# peek at a few entries to confirm torchao's quantized tensor wrapper is present
+# check the torchao quantized tensor type
 for i, (k, v) in enumerate(state_dict.items()):
     print(f"   [{i}] {k}: {type(v)} {getattr(v, 'shape', '')} {getattr(v, 'dtype', '')}")
     if i >= 4:

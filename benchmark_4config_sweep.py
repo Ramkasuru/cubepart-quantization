@@ -1,52 +1,20 @@
 """
-4-config CubePart quantization benchmark (A/B/C/D), extending
-benchmark_full_sweep.py's proven 2-config (bf16 vs int4) sweep.
+4-config CubePart benchmark.
 
-  Config | Cube3D input (npz)     | CubePart model | Label
-  -------|------------------------|----------------|----------------------------
-    A    | bf16_*.npz             | BF16           | baseline
-    B    | bf16_*.npz             | INT4           | CubePart quant, clean input
-    C    | rtn_int4_w4a16_*.npz   | BF16           | baseline on quantized input
-    D    | rtn_int4_w4a16_*.npz   | INT4           | CubePart quant, quant input
+  Config | Cube3D input          | CubePart
+  A      | bf16_*.npz            | BF16
+  B      | bf16_*.npz            | INT4
+  C      | rtn_int4_w4a16_*.npz  | BF16
+  D      | rtn_int4_w4a16_*.npz  | INT4
 
-CD(A,B) isolates CubePart's own quantization effect on a clean Cube3D input.
-CD(C,D) isolates the same effect on an already-quantized Cube3D input.
+CD(A,B) is the effect of CubePart quantization on a BF16 Cube3D mesh, CD(C,D) on an INT4 Cube3D mesh.
 
-Run order quantizes diffusion_model exactly once, same in-place pattern as
-benchmark_full_sweep.py (AffineQuantizedTensor doesn't survive a cpu<->cuda
-round trip, so every INT4 config must run in this same process, after
-quantization, before exit):
-  1. Load BF16 pipeline.
-  2. For every mesh: generate config A (bf16 input), holding part meshes in
-     memory; generate config C (int4 input), holding part meshes in memory.
-  3. Quantize diffusion_model in place (HQQ W4A16, g=128 -- identical filter
-     and call to benchmark_full_sweep.py / quantize_cubepart_rtn.py).
-  4. For every mesh with a stored A result: generate config B, compute
-     CD(A,B) immediately, write it out, drop the stored A result.
-  5. For every mesh with a stored C result: generate config D, compute
-     CD(C,D) immediately, write it out, drop the stored C result.
+The quantized model cannot be moved between devices, so all configs run in one process:
+A and C first, then diffusion_model is quantized in place (HQQ W4A16, g=128), then B and D.
+A/C outputs are cached in results/full_sweep_4config/cache/ so a killed job resumes without regenerating them.
+Results go to results/full_sweep_4config/per_mesh/<idx>_ab.json and <idx>_cd.json.
 
-Resumability is per (mesh, pair) rather than per mesh, since AB and CD are
-independent passes that can fail or be interrupted separately:
-  results/full_sweep_4config/per_mesh/<idx>_ab.json
-  results/full_sweep_4config/per_mesh/<idx>_cd.json
-A mesh's A/C generation is skipped only once BOTH files exist (nothing left
-to compute); otherwise whichever of A or C is still needed gets regenerated.
-
-Finer-grained checkpointing: every completed A/C generation is ALSO cached
-to disk immediately (results/full_sweep_4config/cache/<idx>_a.pkl /
-<idx>_c.pkl), not just held in memory. Without this, a kill during the B/D
-pass (e.g. hitting the SLURM time limit) would silently discard every
-already-completed A/C generation that the B/D pass hadn't reached yet --
-on a large sweep that's potentially hours of GPU work redone for nothing.
-With the cache, a kill at any point loses at most the one generation
-in flight, since a resumed run loads any pending A/C work straight from
-disk instead of regenerating it. Cache files are deleted once their final
-<idx>_ab.json / <idx>_cd.json is written -- they're pure intermediate state.
-
---idx-min/--idx-max select an index band (e.g. 120-139 for furniture) since
-discover_mesh_pairs() has no other way to target one category; --limit still
-works as a plain head-of-list cap for quick smoke runs.
+--idx-min/--idx-max select an index range (e.g. 120-139 for furniture), --limit caps the number of meshes.
 """
 
 import argparse
@@ -92,15 +60,7 @@ def build_filter_fn(skip_substrings):
 
 
 def chamfer_distance(pts_a: np.ndarray, pts_b: np.ndarray) -> float:
-    # True average of forward and backward directional means, per Nisarg's
-    # explicit spec ("each chamfer distance should be an average of forward
-    # and backward computation"). benchmark_full_sweep.py computed a SUM
-    # (d_ab.mean() + d_ba.mean(), no /2) -- kept here originally to match
-    # already-approved smoke-test numbers, but Nisarg's own verbatim
-    # instruction takes priority now that furniture-run numbers are being
-    # reviewed for real. See Decisions.md -- any pre-existing per-mesh JSON
-    # computed under the old sum convention needs its CD values halved
-    # (exact, lossless) rather than being regenerated.
+    # average of the forward and backward mean distances
     tree_a, tree_b = cKDTree(pts_a), cKDTree(pts_b)
     d_ab, _ = tree_b.query(pts_a, k=1)
     d_ba, _ = tree_a.query(pts_b, k=1)
@@ -116,14 +76,8 @@ def load_mesh_from_path(path: Path) -> trimesh.Trimesh:
 
 def generate_parts(pipe, mesh: trimesh.Trimesh, part_names, seed: int = 0,
                     guidance_scale=7.5, num_inference_steps=50):
-    # sample_surface() draws its random subsample via trimesh's Trimesh.sample(),
-    # which uses numpy's global RNG and takes no seed of its own. Without seeding
-    # it here, two calls on the identical mesh get different input points and
-    # therefore different output geometry even though input_to_part_shape's own
-    # seed=0 default makes the diffusion step itself deterministic. Confirmed
-    # empirically: CD(A,A) (same model, same input, run twice) was ~0.017-0.021,
-    # the same order of magnitude as the CD(A,B) "quantization effect" we were
-    # trying to measure -- i.e. pure noise, not signal. See Decisions.md.
+    # trimesh sample() uses numpy's global RNG, so it is seeded here.
+    # Without it CD(A,A) was ~0.02, the same size as CD(A,B).
     np.random.seed(seed)
     surface = sample_surface(mesh, num_samples=128_000)
     surface = torch.from_numpy(surface).to(pipe.device).unsqueeze(0).float()
@@ -200,13 +154,7 @@ def delete_gen_cache(idx: str, letter: str):
 
 
 def part_pair_cds(meshes_x, meshes_y, seed: int):
-    # Reset the RNG before sampling each mesh so identical input geometry
-    # (e.g. a CD(A,A) sanity check) produces identical point clouds and a
-    # true CD of 0 -- otherwise trimesh's unseeded .sample() adds its own
-    # Monte Carlo noise on top of any real quantization-induced difference.
-    # Confirmed empirically 2026-08-31: generation itself was already fully
-    # deterministic (bit-identical vertices/faces across repeat runs with a
-    # fixed seed); this was the last unseeded sampling call in the pipeline.
+    # reset the RNG per mesh so the same input gives the same points (CD(A,A) = 0)
     cds = []
     for (vx, fx), (vy, fy) in zip(meshes_x, meshes_y):
         if vx is None or vy is None:
@@ -264,8 +212,7 @@ def main():
             continue
         parts = parts_override.get(idx, DEFAULT_PARTS)
 
-        seed = int(idx)  # same seed reused for A/B (bf16 mesh) and C/D (int4 mesh)
-                         # so the only difference between paired runs is model precision
+        seed = int(idx)  # same seed for A/B and C/D so only the model precision differs
 
         if need_a:
             cached = None if args.redo else load_gen_cache(idx, "a")

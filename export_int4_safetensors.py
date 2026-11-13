@@ -1,24 +1,14 @@
 """
-Convert the verified INT4 checkpoint to .safetensors and prove the round trip.
-Optional follow-up: the verified .pt is already shippable, Nisarg asked for
-.safetensors (2026-09-25 LinkedIn).
+Converts the INT4 checkpoint to .safetensors and checks the round trip.
+safetensors only stores plain tensors, so each torchao INT4 tensor is flattened with
+__tensor_flatten__ and saved under keys like "<param>::tensor_impl::packed_weight".
+To load, run quantize_() and copy the saved tensors in.
+The verify step zeroes every tensor before the copy and compares a real generation bit for bit.
 
-torchao's INT4 weights are tensor subclasses (AffineQuantizedTensor wrapping a
-tinygemm packed impl), which safetensors cannot store directly. Each one is
-flattened into its inner plain tensors through the standard
-__tensor_flatten__ protocol and written under keys such as
-"<param>::tensor_impl::packed_weight". Loading rebuilds the structure with
-quantize_() and copies the saved tensors in.
-
-UNTESTED on the cluster. The verify step zeroes every leaf before copying and
-then compares a real generation bit for bit, so a pass is meaningful and a
-failure is loud.
-
-Needs results/checkpoint_export/multi_part_dit_int4_hqq_g128.pt and
-reference_parts.npz from export_int4_checkpoint.py --write.
+Needs multi_part_dit_int4_hqq_g128.pt and reference_parts.npz from export_int4_checkpoint.py --write.
 
     python export_int4_safetensors.py --write
-    python export_int4_safetensors.py --verify     # NEW PROCESS
+    python export_int4_safetensors.py --verify     # new process
 """
 import argparse
 
@@ -87,7 +77,7 @@ def verify():
         for k, t in flat.items():
             s = saved[k]
             assert s.shape == t.shape and s.dtype == t.dtype, f"{k}: {s.shape}/{s.dtype} vs {t.shape}/{t.dtype}"
-            t.zero_()      # wipe the fresh quantization so a pass proves the file's contents
+            t.zero_()      # zero the fresh weights so a pass comes from the file
             t.copy_(s)
     torch.cuda.synchronize()
     print(f">> Loaded {len(flat)} tensors from {ST_PATH.name}")

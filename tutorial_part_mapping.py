@@ -1,24 +1,14 @@
 """
-Tutorial: map a mesh's part files back to their part names and view/render
-them together. This is the "barebone (simplest)" script Nisarg asked for
-(2026-09-18 10:15 PM) -- it does NOT do the SH+Spec+AO shading (that's his
-script); it just proves the part1-mesh1 mapping and gives a minimal combined
-render as a sanity check before his shading pipeline runs on the same files.
+Maps a mesh's part files back to part names and writes them as one scene.
 
 Usage:
     python tutorial_part_mapping.py --manifest results/visual_assets/manifest.json --idx 130 --config bf16
     python tutorial_part_mapping.py --manifest results/visual_assets/manifest.json --idx 130 --config bf16 --render out.png
     python tutorial_part_mapping.py --manifest results/visual_assets/manifest.json --idx 130 --all-4-models
 
---all-4-models prints file access for all 4 model variants on one prompt:
-Cube3D BF16 (whole mesh), Cube3D INT4 (whole mesh), CubePart BF16 (parts,
-config A), CubePart INT4 (parts, config D) -- this is the complete "3
-prompts x 4 models" code example Nisarg asked for (2026-09-21 LinkedIn).
-
-Requires only trimesh + numpy (already in the cube3d venv). Rendering an
-image needs an offscreen backend (pyrender+OSMesa/EGL); if that's not set up
-this still prints the mapping and writes a combined .glb you can open in any
-viewer (Blender, Windows 3D Viewer, online glTF viewers) -- no display needed.
+--all-4-models prints the files for Cube3D BF16, Cube3D INT4, CubePart BF16 (config A) and CubePart INT4 (config D).
+Needs trimesh and numpy. --render needs an offscreen backend (pyrender with OSMesa/EGL),
+without it the combined .glb can be opened in any viewer.
 """
 import argparse
 import json
@@ -27,8 +17,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-# distinct colors per part index, purely so a combined viewer shows the
-# split clearly -- has no bearing on the final SH+Spec+AO figure
+# one color per part index, for viewing only
 PALETTE = [
     (228, 26, 28), (55, 126, 184), (77, 175, 74), (152, 78, 163),
     (255, 127, 0), (255, 255, 51), (166, 86, 40), (247, 129, 191),

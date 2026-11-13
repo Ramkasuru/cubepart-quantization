@@ -1,16 +1,7 @@
 """
-Pick 3 representative prompts per category for Nisarg's paper-figure asset
-package (his ask, 2026-09-18): "for 3 prompts per category... prompt ids,
-prompt text, parts list".
-
-Selection rule: per category, the 3 meshes whose CD(A,B) mean is closest to
-that category's median -- i.e. the most TYPICAL cases, not outliers. The
-point of the figure is to show the decomposition looking clean/near-lossless;
-an outlier-driven pick would undermine that unless Nisarg specifically wants
-a limitations figure (ask him if so).
-
-Run from ~/cube/cubepart (needs master_suite.json, nisarg_shared/parts_override.json,
-results/full_sweep_4config/per_mesh/*_ab.json from the clean sweep, job 1159996).
+Picks 3 prompts per category for the figure assets: the 3 meshes whose CD(A,B) mean is closest
+to the category median, so typical cases and not outliers.
+Needs master_suite.json, nisarg_shared/parts_override.json and the per-mesh *_ab.json results (job 1159996).
 
   python select_visual_prompts.py --out visual_prompts_36.json
 """
