@@ -24,11 +24,13 @@ distance of a configuration against itself is exactly 0).
 | CD(A,B): BF16 Cube3D input, BF16 vs INT4 CubePart | 0.0011 | 0.0114 | 0.0193 | 0.8206 |
 | CD(C,D): INT4 Cube3D input, BF16 vs INT4 CubePart | 0.0014 | 0.0118 | 0.0239 | 1.6261 |
 
-| | BF16 | INT4 |
-|---|---|---|
-| Diffusion transformer on disk | 8.582 GB | 1.479 GB (82.8% smaller) |
-| Peak VRAM during generation | 33.71 GiB | 27.09 GiB (19.6% lower) |
-| Latency per generation (mean, 10 meshes) | 34.7 s | 66.5 s (eager mode) |
+| | BF16 | **INT4 (HQQ W4A16)** |
+|---|:-:|:-:|
+| 💾 Model size (diffusion transformer) | 8.58 GB | **1.48 GB (82.8%↓)** |
+| 🎮 Peak VRAM | 33.71 GiB | **27.09 GiB (19.6%↓)** ✨ |
+| 📦 Setup time | 161.8 s | **166.1 s** (BF16 load + 4.3 s quantize) |
+| ⏱️ Latency | 34.7 s | **66.5 s** (eager mode) |
+| 🎯 Part chamfer distance vs BF16, median | n/a | **0.0114** |
 
 Full per-prompt, per-category and dataset statistics for both pairs:
 `cd_stats.json` (output of `compute_4config_cd_stats.py` for job 1159996).
